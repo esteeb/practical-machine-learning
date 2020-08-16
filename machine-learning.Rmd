@@ -1,0 +1,46 @@
+---
+title: "Practical Machine Learning"
+author: "Erik Rehnberg Steeb"
+date: "8/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
+library(caret)
+
+```
+
+## Load and Clean Data
+
+
+```{r load and clean}
+testData <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+trainData <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+# Remove columns with NAs
+testData <- testData[, colSums(is.na(testData)) == 0] 
+trainData <- trainData[, colSums(is.na(trainData)) == 0] 
+# Remove columns that almost certainly do not have anything to do with prediction
+testRemNames <- colnames(testData[,2:7])
+trainRemNames <- colnames(trainData[,2:7])
+testData <- testData[,!(names(testData) %in% testRemNames)]
+trainData <- trainData [,!(names(trainData) %in% trainRemNames)]
+
+```
+
+## Slice Data
+
+Slice data into training and validation test sets
+
+```{r slice}
+set.seed(221989) # For reproducible purposes
+inTrain <- createDataPartition(trainData$classe, p=0.70, list=F)
+trueTrain <- trainData[inTrain,]
+validateData <- trainData[-inTrain,]
+
+```
+
+
+## Create the Model
+
