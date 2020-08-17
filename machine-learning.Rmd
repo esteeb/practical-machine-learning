@@ -4,16 +4,24 @@ author: "Erik Rehnberg Steeb"
 date: "8/15/2020"
 output: html_document
 ---
+## Setup R session
 
-```{r setup, include=FALSE}
+```{r setup, include=TRUE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(cache = TRUE)
 library(caret)
+library(randomForest)
+library(e1071)
+# Load and register doParallel to speed up model creation
+library(doParallel)
+cl <- makePSOCKcluster(3)
+registerDoParallel(cl)
 
 ```
 
 ## Load and Clean Data
 
+First step is to load and clean the data
 
 ```{r load and clean}
 testData <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
@@ -22,10 +30,15 @@ trainData <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-t
 testData <- testData[, colSums(is.na(testData)) == 0] 
 trainData <- trainData[, colSums(is.na(trainData)) == 0] 
 # Remove columns that almost certainly do not have anything to do with prediction
-testRemNames <- colnames(testData[,2:7])
-trainRemNames <- colnames(trainData[,2:7])
+testRemNames <- colnames(testData[,1:7])
+trainRemNames <- colnames(trainData[,1:7])
 testData <- testData[,!(names(testData) %in% testRemNames)]
 trainData <- trainData [,!(names(trainData) %in% trainRemNames)]
+# Remove empty variables from trainData
+trainClasse <- trainData$classe
+trainData <- trainData[sapply(trainData, is.numeric)]
+trainData$classe <- trainClasse
+trainData$classe <- as.factor(trainData$classe)
 
 ```
 
@@ -43,4 +56,50 @@ validateData <- trainData[-inTrain,]
 
 
 ## Create the Model
+I'll be using the Random Forest method, since it selects important variables itself (and is the default for Caret). 
+``` {r model}
+trainctrl <- trainControl(verboseIter = FALSE)
+rfFit <- train(x = trueTrain[,1:52], y = trueTrain$classe,
+               method = "rf", 
+               trControl = trainctrl
+)
 
+rfFit
+               
+```
+
+## Cross Validate
+
+Now that we have a model, I'll estimate the accuracy on our validation dataset.
+```{r, cache = T}
+validateData$classe <- as.factor(validateData$classe)
+
+predict <- predict(rfFit, validateData)
+cMatrix <- confusionMatrix(validateData$classe, predict)
+
+cMatrix
+
+```
+This gives us a very low estimated out-of-sample error rate - something like 0.03% of instances are likely to be misclassified. 
+
+## Test the model
+Time to actually test the model using the testData set
+``` {r, cache = T}
+# Remove last column of testData
+testData1 <- testData[,1:52]
+predictTest <- predict(rfFit, testData)
+
+predictTest
+```
+
+## Appendix: Figures
+1. Correlation Matrix Visualization  
+```{r, cache = T}
+corrPlot <- cor(trainData[, -length(names(trainData))])
+corrplot(corrPlot, method="color", tl.pos='n')
+```
+2. Decision Tree Visualization
+```{r, cache = T}
+treeModel <- rpart(classe ~ ., data=trainData, method="class")
+prp(treeModel) # fast plot
+```
