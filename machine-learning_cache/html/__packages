@@ -7,3 +7,6 @@ e1071
 foreach
 iterators
 doParallel
+corrplot
+rpart
+rpart.plot
