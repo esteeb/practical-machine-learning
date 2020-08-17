@@ -2,7 +2,9 @@
 title: "Practical Machine Learning"
 author: "Erik Rehnberg Steeb"
 date: "8/15/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 ## Setup R session
 
@@ -60,7 +62,7 @@ validateData <- trainData[-inTrain,]
 
 ## Create the Model
 I'll be using the Random Forest method, since it selects important variables itself (and is the default for Caret). 
-``` {r model}
+``` {r model, cache = TRUE}
 trainctrl <- trainControl(verboseIter = FALSE)
 rfFit <- train(x = trueTrain[,1:52], y = trueTrain$classe,
                method = "rf", 

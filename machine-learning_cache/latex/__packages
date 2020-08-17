@@ -1,0 +1,12 @@
+base
+lattice
+ggplot2
+caret
+randomForest
+e1071
+corrplot
+rpart
+rpart.plot
+foreach
+iterators
+doParallel
